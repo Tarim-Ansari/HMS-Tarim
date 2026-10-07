@@ -1,0 +1,5 @@
+from django.urls import include,path
+from rest_framework.routers import DefaultRouter
+from .views import NurseViewSet
+router=DefaultRouter(); router.register(r"",NurseViewSet,basename="nurse")
+urlpatterns=[path("",include(router.urls))]
