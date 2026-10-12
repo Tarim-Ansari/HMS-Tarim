@@ -10,11 +10,10 @@ import { Toaster } from "react-hot-toast";
 import store from "./store";
 import MainLayout from "./components/layout/MainLayout";
 
-// Pages
+// Live Pages
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import Dashboard from "./pages/dashboard/Dashboard";
-import Analytics from "./pages/dashboard/Analytics";
 import Patients from "./pages/patients/Patients";
 import PatientRegister from "./pages/patients/PatientRegister";
 import Appointments from "./pages/appointments/Appointments";
@@ -27,9 +26,6 @@ import Pharmacy from "./pages/pharmacy/Pharmacy";
 import Billing from "./pages/billing/Billing";
 import IPD from "./pages/ipd/IPD";
 import Emergency from "./pages/emergency/Emergency";
-import HR from "./pages/hr/HR";
-import Inventory from "./pages/inventory/Inventory";
-import AIFeatures from "./pages/ai/AIFeatures";
 import HospitalManagement from "./pages/admin/HospitalManagement";
 import BranchManagement from "./pages/admin/BranchManagement";
 import DepartmentManagement from "./pages/admin/DepartmentManagement";
@@ -39,30 +35,33 @@ import HospitalAdminVerify from "./pages/auth/HospitalAdminVerify";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import VerifyOTP from "./pages/auth/VerifyOTP";
 
-// Roles that always get full access, per the PDF (section 3):
-// Super Admin -> Complete System Access. Hospital Admin -> Manage Hospital Operations / Departments / Reports.
-const FULL_ACCESS_ROLES = [
-  "SUPER_USER",
-  "SUPER_ADMIN",
-  "HOSPITAL_ADMIN",
-];
-
+/**
+ * Strict Protected Route
+ * Enforces authentication and exact role authorization per route.
+ */
 function ProtectedRoute({ children, allowedRoles }) {
   const { isAuthenticated, role } = useSelector((state) => state.auth);
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const currentRole = (role || "").toUpperCase();
-  const isFullAccess = FULL_ACCESS_ROLES.some(
-    (r) => r.toUpperCase() === currentRole,
-  );
+  // If no allowedRoles specified, accessible to all authenticated roles (e.g. /dashboard)
+  if (!allowedRoles || allowedRoles.length === 0) {
+    return <MainLayout>{children}</MainLayout>;
+  }
+
+  const currentRole = String(role || "").trim().toUpperCase();
+  const isSuperUser =
+    currentRole === "SUPER_USER" || currentRole === "SUPER_ADMIN";
+
   const isAllowed =
-    isFullAccess ||
-    !allowedRoles ||
-    allowedRoles.length === 0 ||
+    (isSuperUser &&
+      (allowedRoles.includes("SUPER_USER") ||
+        allowedRoles.includes("SUPER_ADMIN"))) ||
     allowedRoles.some((r) => r.toUpperCase() === currentRole);
 
-  if (!isAllowed) return <Navigate to="/dashboard" replace />;
+  if (!isAllowed) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return <MainLayout>{children}</MainLayout>;
 }
@@ -70,6 +69,7 @@ function ProtectedRoute({ children, allowedRoles }) {
 function AppRoutes() {
   return (
     <Routes>
+      {/* Public Authentication Routes */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-otp" element={<VerifyOTP />} />
@@ -77,7 +77,7 @@ function AppRoutes() {
       <Route path="/hospital-admin/verify" element={<HospitalAdminVerify />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
 
-      {/* Every role has a Dashboard */}
+      {/* Dashboard: All authenticated roles */}
       <Route
         path="/dashboard"
         element={
@@ -87,152 +87,12 @@ function AppRoutes() {
         }
       />
 
-      {/* Doctor: Patient Consultation, Prescription Management, EMR Access */}
-      <Route
-        path="/appointments"
-        element={
-          <ProtectedRoute allowedRoles={["doctor", "receptionist", "patient"]}>
-            <Appointments />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/emr"
-        element={
-          <ProtectedRoute allowedRoles={["doctor", "patient"]}>
-            <EMR />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/telemedicine"
-        element={
-          <ProtectedRoute allowedRoles={["doctor", "patient"]}>
-            <Telemedicine />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/doctors"
-        element={
-          <ProtectedRoute allowedRoles={["doctor", "receptionist"]}>
-            <Doctors />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/nurses"
-        element={
-          <ProtectedRoute allowedRoles={["nurse", "receptionist"]}>
-            <Nurses />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Receptionist, Nurse, Doctor: Patient Directory and Records */}
-      <Route
-        path="/patients"
-        element={
-          <ProtectedRoute allowedRoles={["doctor", "nurse", "receptionist"]}>
-            <Patients />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/patients/register"
-        element={
-          <ProtectedRoute allowedRoles={["receptionist"]}>
-            <PatientRegister />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Nurse & Doctor: Patient Monitoring, Bed Allocation */}
-      <Route
-        path="/ipd"
-        element={
-          <ProtectedRoute allowedRoles={["nurse", "doctor"]}>
-            <IPD />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/emergency"
-        element={
-          <ProtectedRoute allowedRoles={["nurse"]}>
-            <Emergency />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Lab Technician: Manage Tests, Upload Reports */}
-      <Route
-        path="/laboratory"
-        element={
-          <ProtectedRoute allowedRoles={["lab_technician", "doctor"]}>
-            <Laboratory />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Pharmacist: Inventory Control, Medicine Billing */}
-      <Route
-        path="/pharmacy"
-        element={
-          <ProtectedRoute allowedRoles={["pharmacist"]}>
-            <Pharmacy />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/inventory"
-        element={
-          <ProtectedRoute allowedRoles={["pharmacist"]}>
-            <Inventory />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Accountant: Billing, Revenue Tracking */}
-      <Route
-        path="/billing"
-        element={
-          <ProtectedRoute allowedRoles={["accountant"]}>
-            <Billing />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/analytics"
-        element={
-          <ProtectedRoute allowedRoles={["accountant"]}>
-            <Analytics />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Super Admin / Hospital Admin only */}
+      {/* Super User / Super Admin Only */}
       <Route
         path="/hospitals"
         element={
-          <ProtectedRoute allowedRoles={["SUPER_ADMIN"]}>
+          <ProtectedRoute allowedRoles={["SUPER_USER", "SUPER_ADMIN"]}>
             <HospitalManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/branches"
-        element={
-          <ProtectedRoute allowedRoles={["SUPER_USER", "SUPER_ADMIN", "HOSPITAL_ADMIN"]}>
-            <BranchManagement />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/departments"
-        element={
-          <ProtectedRoute allowedRoles={["SUPER_USER", "SUPER_ADMIN", "HOSPITAL_ADMIN"]}>
-            <DepartmentManagement />
           </ProtectedRoute>
         }
       />
@@ -244,24 +104,238 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+
+      {/* Hospital Infrastructure: Super User & Hospital Admin */}
       <Route
-        path="/hr"
+        path="/branches"
         element={
-          <ProtectedRoute allowedRoles={[]}>
-            <HR />
+          <ProtectedRoute
+            allowedRoles={["SUPER_USER", "SUPER_ADMIN", "HOSPITAL_ADMIN"]}
+          >
+            <BranchManagement />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/ai"
+        path="/departments"
         element={
-          <ProtectedRoute allowedRoles={[]}>
-            <AIFeatures />
+          <ProtectedRoute
+            allowedRoles={["SUPER_USER", "SUPER_ADMIN", "HOSPITAL_ADMIN"]}
+          >
+            <DepartmentManagement />
           </ProtectedRoute>
         }
       />
 
-      {/* Default redirect */}
+      {/* Patient Directory */}
+      <Route
+        path="/patients"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "DOCTOR",
+              "NURSE",
+              "RECEPTIONIST",
+            ]}
+          >
+            <Patients />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patients/register"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "RECEPTIONIST",
+            ]}
+          >
+            <PatientRegister />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Appointments */}
+      <Route
+        path="/appointments"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "DOCTOR",
+              "RECEPTIONIST",
+              "PATIENT",
+            ]}
+          >
+            <Appointments />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Doctors & Nurses Directories */}
+      <Route
+        path="/doctors"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "DOCTOR",
+              "RECEPTIONIST",
+            ]}
+          >
+            <Doctors />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/nurses"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "NURSE",
+              "RECEPTIONIST",
+            ]}
+          >
+            <Nurses />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Clinical Care: EMR & Telemedicine */}
+      <Route
+        path="/emr"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "DOCTOR",
+              "PATIENT",
+            ]}
+          >
+            <EMR />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/telemedicine"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "DOCTOR",
+              "PATIENT",
+            ]}
+          >
+            <Telemedicine />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Inpatient Care (IPD) & Emergency */}
+      <Route
+        path="/ipd"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "NURSE",
+              "DOCTOR",
+            ]}
+          >
+            <IPD />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/emergency"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "NURSE",
+              "DOCTOR",
+            ]}
+          >
+            <Emergency />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Diagnostics: Laboratory */}
+      <Route
+        path="/laboratory"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "LAB_TECHNICIAN",
+              "DOCTOR",
+            ]}
+          >
+            <Laboratory />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Medication & Pharmacy */}
+      <Route
+        path="/pharmacy"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "PHARMACIST",
+              "DOCTOR",
+            ]}
+          >
+            <Pharmacy />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Finance & Invoicing */}
+      <Route
+        path="/billing"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "SUPER_USER",
+              "SUPER_ADMIN",
+              "HOSPITAL_ADMIN",
+              "ACCOUNTANT",
+            ]}
+          >
+            <Billing />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
