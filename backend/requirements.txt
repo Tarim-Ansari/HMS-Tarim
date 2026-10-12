@@ -1,16 +1,8 @@
-. backend folder
-        python -m venv venv
-        venv\Scripts\activate
-        python -m pip install --upgrade pip
-        pip install django
-
-
-pip install djangorestframework
-pip install djangorestframework-simplejwt
-pip install django-cors-headers
-pip install psycopg[binary]
-pip install python-dotenv
-pip install django-filter
-pip install drf-spectacular
-pip install Pillow
- pip install python-decouple
+Django>=6.1,<6.2
+djangorestframework>=3.16
+djangorestframework-simplejwt>=5.5
+django-cors-headers>=4.7
+django-filter>=25.1
+psycopg[binary]>=3.2
+python-decouple>=3.8
+Pillow>=11.0

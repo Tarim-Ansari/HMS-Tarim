@@ -10,6 +10,7 @@ from .views import (
     SuperUserRegisterView,
     StaffCreateView,
     PatientRegisterView,
+    VerifyPatientOTPView,
     MeView,
     CreateHospitalAdminView,
     LogoutView,
@@ -65,6 +66,11 @@ urlpatterns = [
         "patient/register/",
         PatientRegisterView.as_view(),
         name="patient_register"
+    ),
+    path(
+        "patient/verify-otp/",
+        VerifyPatientOTPView.as_view(),
+        name="patient_verify_otp"
     ),
 
     # Logged in user

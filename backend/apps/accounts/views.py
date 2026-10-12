@@ -22,6 +22,7 @@ from .serializers import (
     ResetPasswordSerializer,
     StaffListSerializer,
     StaffDetailSerializer,  
+    PatientVerifyOTPSerializer
 )
 from .permissions import (
     IsSuperUser,
@@ -175,16 +176,36 @@ class PatientRegisterView(APIView):
             raise_exception=True
         )
         user = serializer.save()
+        send_otp(user.email, "PATIENT_REGISTER")
         return Response(
             {
                 "success": True,
                 "message":
-                    "Patient registered successfully. "
-                    "Please verify your email.",
-                "user_id": user.id
+                    "Patient registered successfully. OTP has been sent to the email.",
+                "user_id": user.id,
+                "email": user.email,
             },
             status=status.HTTP_201_CREATED
         )
+
+class VerifyPatientOTPView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PatientVerifyOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data["user"]
+        otp_obj = serializer.validated_data["otp_obj"]
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified"])
+        otp_obj.is_verified = True
+        otp_obj.save(update_fields=["is_verified"])
+        return Response({
+            "success": True,
+            "message": "Patient email verified successfully.",
+            "data": {"user_id": user.id, "email": user.email, "email_verified": True},
+        }, status=status.HTTP_200_OK)
+
 
 class MeView(APIView):
     permission_classes = [
@@ -1347,10 +1368,12 @@ class HospitalAdminApprovalView(APIView):
             )
 
         admin.is_approved = True
+        admin.is_active = True
 
         admin.save(
             update_fields=[
-                "is_approved"
+                "is_approved",
+                "is_active",
             ]
         )
 

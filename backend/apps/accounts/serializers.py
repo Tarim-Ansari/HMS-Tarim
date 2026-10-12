@@ -324,7 +324,7 @@ class StaffCreateSerializer(serializers.ModelSerializer):
 
         if department:
 
-            if department.hospital_id != hospital.id:
+            if department.branch_id and department.branch.hospital_id != hospital.id:
 
                 raise serializers.ValidationError({
                     "department":
@@ -432,6 +432,33 @@ class PatientRegisterSerializer(serializers.ModelSerializer):
         return user 
         
     
+
+
+class PatientVerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(min_length=6, max_length=6)
+
+    def validate(self, attrs):
+        email = attrs["email"].strip().lower()
+        try:
+            user = User.objects.get(email=email, role="PATIENT")
+        except User.DoesNotExist:
+            raise serializers.ValidationError({"email": "Patient account not found."})
+        otp_obj = EmailOTP.objects.filter(email=email, purpose="PATIENT_REGISTER", is_verified=False).order_by("-created_at").first()
+        if not otp_obj:
+            raise serializers.ValidationError({"otp": "OTP not found."})
+        if otp_obj.expires_at < timezone.now():
+            raise serializers.ValidationError({"otp": "OTP has expired."})
+        if otp_obj.attempts >= 5:
+            raise serializers.ValidationError({"otp": "Too many OTP attempts."})
+        if not check_password(attrs["otp"], otp_obj.otp_hash):
+            otp_obj.attempts += 1
+            otp_obj.save(update_fields=["attempts"])
+            raise serializers.ValidationError({"otp": "Invalid OTP."})
+        attrs["user"] = user
+        attrs["otp_obj"] = otp_obj
+        return attrs
+
 class HospitalAdminCreateSerializer(
     serializers.ModelSerializer
 ):
@@ -742,7 +769,7 @@ class StaffDetailSerializer(
                         "to this hospital."
                 })
         if department:
-            if department.hospital_id != hospital.id:
+            if department.branch_id and department.branch.hospital_id != hospital.id:
                 raise serializers.ValidationError({
                     "department":
                         "Department does not belong "

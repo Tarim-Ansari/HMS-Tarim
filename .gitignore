@@ -1,70 +1,87 @@
-# =========================
-# Python / Django
-# =========================
-
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.pyo
+*$py.class
+*.pyc
 
-# Virtual Environment
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
 venv/
-.venv/
 env/
+ENV/
+.venv/
+env.bak/
+venv.bak/
 
-# Django
-*.log
-db.sqlite3
-db.sqlite3-journal
-
-# Django generated files
-staticfiles/
-media/
-
-# Environment variables
+# Environment variables & secrets
 .env
-.env.*
+.env.local
+.env.*.local
 !.env.example
 
+# Database & SQLite
+*.sqlite3
+*.db
 
-# =========================
-# React / Node
-# =========================
+# Media uploads
+backend/media/
+media/
 
+# Node & Frontend dependencies and build outputs
 node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# React / Vite build files
-dist/
-build/
-
-# Environment variables
-frontend/.env
-frontend/.env.*
-!frontend/.env.example
-
-
-# =========================
-# IDE / Editor
-# =========================
-
+# Editor & OS files
 .vscode/
 .idea/
-
-# =========================
-# OS
-# =========================
-
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 .DS_Store
 Thumbs.db
 desktop.ini
 
+# Scratch / temp directories
+scratch/
 
-# =========================
-# Testing / Coverage
-# =========================
+# Archives & Redundant development folders
+*.zip
+*.tar.gz
+backend-check/
+frontend-1/
+frontend-check/
 
-.pytest_cache/
-.coverage
-htmlcov/
